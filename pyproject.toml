@@ -1,0 +1,49 @@
+[tool.poetry]
+name = "python-fastapi"
+version = "0.1.0"
+description = ""
+authors = ["James Neale <42097394+james9226@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{include = "loans_billing"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.95.0"
+pydantic = {extras = ["email"], version = "^1.10.7"}
+uvicorn = "^0.21.1"
+regex = "^2023.3.23"
+google-auth = "^2.17.1"
+google-cloud-firestore = "^2.10.1"
+google-cloud-secret-manager = "^2.16.1"
+google-cloud-pubsub = "^2.16.1"
+python-dotenv = "^1.0.0"
+bcrypt = "^4.0.1"
+firebase-admin = "^6.2.0"
+strawberry-graphql = {extras = ["fastapi"], version = "^0.196.2"}
+numpy-financial = "^1.0.0"
+
+[tools.poetry.group.dev]
+optional=true
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.1.1"
+pytest = "^7.2.2"
+black = "^23.3.0"
+ipykernel = "^6.22.0"
+types-cachetools = "^5.3.0.5"
+types-regex = "^2023.3.23.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[[tool.mypy.overrides]]
+module = [
+    "google.oauth2",
+    "google.cloud",
+    "google.cloud.firestore",
+    "python-dotenv",
+    "originations.config.config",
+]
+ignore_missing_imports = true
+implicit_reexport = true

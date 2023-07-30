@@ -1,0 +1,18 @@
+version: '3'
+services:
+  loansAutopay:
+    build: ./loans_autopay
+    ports:
+      - "5000:5000"
+  loansBFF:
+    build: ./loans_bff
+    ports:
+      - "5001:5001"
+  loansBilling:
+    build: ./loans_billing
+    ports:
+      - "5002:5002"
+  loansManager:
+    build: ./loans_manager
+    ports:
+      - "5003:5003"
