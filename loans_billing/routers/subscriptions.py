@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from common.models.pubsub_schemas.creation_schema import LoanCreationSchema
 from common.services.cloudsql.initialize import get_db
