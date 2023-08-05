@@ -32,3 +32,6 @@ class Loan(BaseModel):
     overrides: list[LoanOverride]
 
     mandate: DirectDebit
+
+    class Config:
+        orm_mode = True

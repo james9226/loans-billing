@@ -40,13 +40,6 @@ class PubSubPublisher:
         # Create a publisher client
         topic_path = self.publisher.topic_path(self.project_id, topic_id)
 
-        # Encode the message as a JSON string
-        message_json["event_time"] = (
-            datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-        )
-
-        message_data = json.dumps(message_json).encode("utf-8")
-
         # Define the callback function for async publishing
         def get_callback(future, data):
             def callback(future):
@@ -60,9 +53,9 @@ class PubSubPublisher:
         # Publish the message asynchronously
         loop = asyncio.get_event_loop()
         future = loop.run_in_executor(
-            None, self.publisher.publish, topic_path, message_data
+            None, self.publisher.publish, topic_path, message_json
         )
-        future.add_done_callback(get_callback(future, message_data))
+        future.add_done_callback(get_callback(future, message_json))
 
         # Wait for the message to be sent
         await future

@@ -1,12 +1,19 @@
 import logging
 from logging.config import dictConfig
 
-from fastapi import FastAPI, Request, status
+from fastapi import Depends, FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.middleware.context import RequestContextMiddleware
+
+# from common.services.cloudsql.initialize import heartbeat, initialize_cloudsql
+# from common.services.cloudsql.migrate import perform_cloudsql_migration
+from common.services.cloudsql.initialize import initialize_cloudsql, heartbeat
+from common.services.cloudsql.migrate import perform_cloudsql_migration
 from common.services.firestore.firestore import (
     initialize_async_firestore,
     initialize_sync_firestore,
@@ -40,8 +47,17 @@ app.add_middleware(RequestContextMiddleware)
 
 @app.on_event("startup")
 async def perform_setup():
-    initialize_sync_firestore()
-    await initialize_async_firestore()
+    await initialize_cloudsql()
+
+    # Checks that CloudSQL DB can be queried
+    await heartbeat()
+
+    # Performs DB Migrations
+    await perform_cloudsql_migration()
+
+    # initialize_sync_firestore()
+    # await initialize_async_firestore()
+
     initialize_pub_sub_publisher(settings.project_id, logger)
 
 

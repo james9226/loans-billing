@@ -22,6 +22,8 @@ def statement_processor(loan: Loan, message_id: UUID):
 
     loan = update_behaviours(loan, message_id)
 
+    loan.remaining_term -= 1  # TODO - very dangerous, very bad.
+
     loan = set_due_balances(loan, message_id)
 
     publish_loan_event(

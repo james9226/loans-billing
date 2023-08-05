@@ -21,6 +21,10 @@ bcrypt = "^4.0.1"
 firebase-admin = "^6.2.0"
 strawberry-graphql = {extras = ["fastapi"], version = "^0.196.2"}
 numpy-financial = "^1.0.0"
+cloud-sql-python-connector = {extras = ["asyncpg"], version = "^1.3.0"}
+greenlet = {path = "/Users/james/dev/greenlet/dist/greenlet-2.0.1-cp310-cp310-macosx_12_0_arm64.whl"}
+sqlmodel = "^0.0.8"
+psycopg2-binary = "^2.9.7"
 
 [tools.poetry.group.dev]
 optional=true

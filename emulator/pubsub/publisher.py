@@ -98,10 +98,10 @@ def publish_messages(project_id: str, topic_id: str) -> None:
     # in the form `projects/{project_id}/topics/{topic_id}`
     topic_path = publisher.topic_path(project_id, topic_id)
 
-    for n in range(1, 10):
+    for n in range(1, 1000):
         data = {
             "event_id": str(uuid.uuid4()),
-            "loan_id": "10fddd8c-061b-4eb0-9d4f-88e863a2e4ae",
+            "loan_id": str(uuid.uuid4()),
             "customer_id": "1a7d0e68-e1fb-43bc-a4e6-47981e91f789",
             "amount": 5000,
             "term_in_months": 24,
