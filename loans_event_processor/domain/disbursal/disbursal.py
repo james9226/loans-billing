@@ -1,53 +1,78 @@
-from google.cloud.pubsub_v1.subscriber.message import Message
-
-from common.enums.event import LoanEventType
-from common.models.loan import Loan
-from common.services.firestore.firestore import get_sync_firestore
-from common.services.firestore.sync.transactional.lock import (
-    lock_document,
-    release_lock,
-)
-from loans_event_processor.domain.behaviour.behaviour_manager import update_behaviours
-
-from loans_event_processor.domain.loan_events.publish import publish_loan_event
-from loans_event_processor.domain.principal_due.calculate_due import set_due_balances
-from loans_event_processor.domain.state.state_manager import update_account_state
+from datetime import datetime
+from uuid import UUID
+from fastapi.responses import JSONResponse
+from fastapi import status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from sqlmodel import select
 
 
-def consume_disbursal_event(message: Message) -> None:
-    loan_id = message.attributes.loan_id
-    firestore = get_sync_firestore()
+from common.enums.product import ProductType
+from common.enums.state import LoanState
+from common.enums.transaction_type import TransactionType
+from common.enums.tx_keys import TransactionKey
+from common.models.cloudsql_sqlmodel_models import Loan
+from common.models.transaction import TransactionDelta, TransactionRequest
 
-    loan_ref = firestore.collection("loans").document(str(loan_id))
-    existing_loan = lock_document(loan_ref)
+from loans_event_processor.domain.transaction_service.service import TransactionService
 
-    if not existing_loan.exists:
-        print("Critical - could not handle disbursal event as loan does not exist!")
-        return
 
-    loan = Loan(**existing_loan.to_dict())
+async def disburse_loan(loan_id: UUID, db: AsyncSession):
+    async with db.begin() as transaction:
+        result = await transaction.session.execute(
+            select(Loan)
+            .options(selectinload(Loan.latest_balances))
+            .options(selectinload(Loan.mandate))
+            .where(Loan.id == loan_id)
+            .with_for_update()
+        )
+        loan: Loan = result.scalar_one_or_none()
 
-    loan_backup = loan.copy(deep=True)
+        # Very rudimentary validation
+        if loan is None:
+            await transaction.rollback()
+            return JSONResponse(
+                content={"Message": f"No Loan Found"},
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
 
-    loan_with_state = update_account_state(loan, message.attributes.event_id)
+        if loan.state != LoanState.PENDING:
+            await transaction.rollback()
+            return JSONResponse(
+                content={"Message": f"Loan Has Already Been Recorded as Disbursed"},
+                status_code=status.HTTP_200_OK,
+            )
 
-    loan_with_behaviours = update_behaviours(
-        loan_with_state, message.attributes.event_id
+        loan.state = LoanState.LIVE
+        loan.disbursal_time = datetime.now()
+
+        balance_to_disburse = loan.get_balance_by_key(
+            TransactionKey.PRINCIPAL_TO_DISBURSE
+        )
+        disbursal = TransactionRequest(
+            product_id=loan_id,
+            product_type=ProductType.UPL,
+            event_type=TransactionType.LOAN_DISBURSED,
+            event_source="Loans Billing Backend",
+            funding_source="Lendotopia Corporate Account",
+            funding_destination=f"Account: {loan.mandate.account_number}, Sort Code: {loan.mandate.sort_code}",
+            balance_deltas=[
+                TransactionDelta(
+                    balance_delta_key=TransactionKey.PRINCIPAL_TO_DISBURSE,
+                    balance_delta_value=-balance_to_disburse,
+                ),
+                TransactionDelta(
+                    balance_delta_key=TransactionKey.PRINCIPAL,
+                    balance_delta_value=balance_to_disburse,
+                ),
+            ],
+        )
+        txs = TransactionService(loan=loan, db_session=transaction.session)
+        txs.add_transaction(disbursal)
+
+        await transaction.commit()
+
+    return JSONResponse(
+        content={"Message": f"Recorded disbursal for loan {loan_id}"},
+        status_code=status.HTTP_200_OK,
     )
-
-    loan_with_due_payments = set_due_balances(
-        loan_with_behaviours, message.attributes.event_id
-    )
-
-    publish_loan_event(
-        loan_with_due_payments,
-        loan_with_due_payments.balance - loan_backup.balance,
-        message.attributes.event_id,
-        LoanEventType.LOAN_DISBURSED,
-    )
-    loan_ref.set(loan.dict(), merge=True)
-
-    release_lock(loan_ref)
-    message.ack()
-
-    return

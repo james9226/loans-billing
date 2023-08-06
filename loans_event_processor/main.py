@@ -46,10 +46,10 @@ app.add_middleware(RequestContextMiddleware)
 async def perform_setup():
     # await initialize_cloudsql_proxy_connection()
     await initialize_cloudsql()
-    await drop_db()
+    # await drop_db()
     await heartbeat()
     await perform_cloudsql_migration()
-    await seed_db()
+    # await seed_db()
     initialize_pub_sub_publisher(settings.project_id, logger)
 
 

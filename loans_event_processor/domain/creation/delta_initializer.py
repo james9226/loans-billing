@@ -1,4 +1,5 @@
 from common.enums.product import ProductType
+from common.enums.transaction_type import TransactionType
 from common.enums.tx_keys import TransactionKey
 from common.models.loan_creation import LoanCreationRequest
 from common.models.transaction import TransactionDelta, TransactionRequest
@@ -25,9 +26,9 @@ def build_disbursal_transaction_request(
     return TransactionRequest(
         product_id=loan_to_create.loan_id,
         product_type=ProductType.UPL,
-        event_type="CREATION",
+        event_type=TransactionType.LOAN_CREATED,
         event_source="Loans Billing Backend",
-        funding_source="Lendotopia Corporate Account",
-        funding_destination=f"Account: {loan_to_create.mandate.account_number}, Sort Code: {loan_to_create.mandate.sort_code}",
+        # funding_source="Lendotopia Corporate Account",
+        # funding_destination=f"Account: {loan_to_create.mandate.account_number}, Sort Code: {loan_to_create.mandate.sort_code}",
         balance_deltas=deltas,
     )

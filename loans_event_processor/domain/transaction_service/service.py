@@ -4,7 +4,7 @@ from common.models.cloudsql_sqlmodel_models import (
     BalanceDelta,
     LatestBalance,
     Loan,
-    Transaction,
+    TransactionRecord,
 )
 from common.models.transaction import TransactionDelta, TransactionRequest
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -32,7 +32,7 @@ class TransactionService:
             self.db_session.add(latest_balance)
 
     def add_transaction(self, tx_update: TransactionRequest):
-        transaction = Transaction(
+        transaction = TransactionRecord(
             id=tx_update.id,
             product_id=tx_update.product_id,
             product_type=tx_update.product_type,
@@ -64,6 +64,7 @@ class TransactionService:
             latest_balance.balance_value = (
                 latest_balance.balance_value + delta_to_apply.balance_delta_value
             )
+            latest_balance.transaction_id = tx_update.id
 
             balance = Balance(
                 transaction_id=tx_update.id,
