@@ -1,6 +1,9 @@
 import copy
 from datetime import date, datetime
+from decimal import Decimal
 import uuid
+
+from pydantic import condecimal
 
 
 def format_dict(dictionary):
@@ -25,6 +28,9 @@ def format_dict(dictionary):
             output_dictionary[key] = str(value)
 
         elif isinstance(value, uuid.UUID):
+            output_dictionary[key] = str(value)
+
+        elif isinstance(value, Decimal):
             output_dictionary[key] = str(value)
 
     return output_dictionary

@@ -1,6 +1,6 @@
 # loans-billing-engine
 
-poetry run uvicorn loans_billing.main:app --reload
+poetry run uvicorn loans_event_processor.main:app --reload
 
 ## Pub/Sub Emulator
 

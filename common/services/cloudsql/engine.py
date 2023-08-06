@@ -1,7 +1,10 @@
+import logging
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 
 from common.services.cloudsql.config import DBSettings
+
+logger = logging.getLogger("loans-event-processor-logger")
 
 
 def get_async_engine(db_settings: DBSettings) -> AsyncEngine:
@@ -21,6 +24,7 @@ def get_async_engine(db_settings: DBSettings) -> AsyncEngine:
     )
 
     # create an async engine
-    engine = create_async_engine(DATABASE_URL, echo=True)
+    engine = create_async_engine(DATABASE_URL, pool_size=5, max_overflow=15, echo=False)
+    logger.warn("Created async connection pool with Cloud SQL")
 
     return engine

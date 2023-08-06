@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["James Neale <42097394+james9226@users.noreply.github.com>"]
 readme = "README.md"
-packages = [{include = "loans_billing"}]
+packages = [{include = "loans_event_processor"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"

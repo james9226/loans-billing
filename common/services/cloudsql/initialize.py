@@ -38,3 +38,39 @@ async def heartbeat():
     # Create a new session from session factory
     async with AsyncSession(DBEngine) as session:
         await session.execute("""SELECT 'Hello World' """)
+
+
+async def drop_db():
+    async with AsyncSession(DBEngine) as session:
+        await session.execute(
+            """DO $$ DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema()) LOOP
+        EXECUTE 'DROP TABLE IF EXISTS ' || r.tablename || ' CASCADE';
+    END LOOP;
+END $$;"""
+        )
+        await session.commit()
+
+
+async def seed_db():
+    async with AsyncSession(DBEngine) as session:
+        await session.execute(
+            """
+insert into customer values (
+'1a7d0e68-e1fb-43bc-a4e6-47981e91f789',
+NOW(),
+'Shippy',
+'McShipFace',
+35,
+'British',
+'shippy@mcshipface.com',
+true);
+"""
+        )
+        await session.commit()
+
+
+async def close_cloudsql_pool() -> None:
+    await DBEngine.dispose()
