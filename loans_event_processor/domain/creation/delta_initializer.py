@@ -27,8 +27,6 @@ def build_disbursal_transaction_request(
         product_id=loan_to_create.loan_id,
         product_type=ProductType.UPL,
         event_type=TransactionType.LOAN_CREATED,
-        event_source="Loans Billing Backend",
-        # funding_source="Lendotopia Corporate Account",
-        # funding_destination=f"Account: {loan_to_create.mandate.account_number}, Sort Code: {loan_to_create.mandate.sort_code}",
         balance_deltas=deltas,
+        context=[],
     )

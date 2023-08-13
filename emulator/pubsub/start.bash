@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export PUBSUB_PROJECT_ID=firebase-svelte-381023
-export PUBSUB_EMULATOR_HOST=localhost:8518
+export PUBSUB_EMULATOR_HOST=localhost:8510
 poetry run python publisher.py firebase-svelte-381023 create loan-events
 poetry run python publisher.py firebase-svelte-381023 create loan-events-reporting
 poetry run python publisher.py firebase-svelte-381023 create loan-creation-requests

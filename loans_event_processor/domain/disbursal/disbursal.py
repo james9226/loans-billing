@@ -5,6 +5,7 @@ from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
+from common.enums.context_keys import ContextKey
 
 
 from common.enums.product import ProductType
@@ -12,7 +13,11 @@ from common.enums.state import LoanState
 from common.enums.transaction_type import TransactionType
 from common.enums.tx_keys import TransactionKey
 from common.models.cloudsql_sqlmodel_models import Loan
-from common.models.transaction import TransactionDelta, TransactionRequest
+from common.models.transaction import (
+    TransactionContext,
+    TransactionDelta,
+    TransactionRequest,
+)
 
 from loans_event_processor.domain.transaction_service.service import TransactionService
 
@@ -23,6 +28,7 @@ async def disburse_loan(loan_id: UUID, db: AsyncSession):
             select(Loan)
             .options(selectinload(Loan.latest_balances))
             .options(selectinload(Loan.mandate))
+            .options(selectinload(Loan.behaviour))
             .where(Loan.id == loan_id)
             .with_for_update()
         )
@@ -53,9 +59,6 @@ async def disburse_loan(loan_id: UUID, db: AsyncSession):
             product_id=loan_id,
             product_type=ProductType.UPL,
             event_type=TransactionType.LOAN_DISBURSED,
-            event_source="Loans Billing Backend",
-            funding_source="Lendotopia Corporate Account",
-            funding_destination=f"Account: {loan.mandate.account_number}, Sort Code: {loan.mandate.sort_code}",
             balance_deltas=[
                 TransactionDelta(
                     balance_delta_key=TransactionKey.PRINCIPAL_TO_DISBURSE,
@@ -66,9 +69,25 @@ async def disburse_loan(loan_id: UUID, db: AsyncSession):
                     balance_delta_value=balance_to_disburse,
                 ),
             ],
+            context=[
+                TransactionContext(
+                    context_key=ContextKey.FUNDING_SOURCE,
+                    context_value="Lendotopia Corporate Account",
+                ),
+                TransactionContext(
+                    context_key=ContextKey.FUNDING_DESTINATION,
+                    context_value=f"Account: {loan.mandate.account_number}, Sort Code: {loan.mandate.sort_code}",
+                ),
+                TransactionContext(
+                    context_key=ContextKey.INTEREST_BEHAVAIOUR,
+                    context_value="Enabled",
+                ),
+            ],
         )
         txs = TransactionService(loan=loan, db_session=transaction.session)
         txs.add_transaction(disbursal)
+
+        loan.behaviour.interest_enabled = True
 
         await transaction.commit()
 

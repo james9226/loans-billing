@@ -1,9 +1,11 @@
 from datetime import date, datetime
-from typing import List, Optional
+from decimal import Decimal
+from typing import Optional
 from uuid import UUID, uuid4
 from pydantic import condecimal
-from sqlalchemy import ForeignKey
-from sqlmodel import Field, Relationship, SQLModel, create_engine
+from sqlmodel import Field, Relationship, SQLModel
+from common.enums.context_keys import ContextKey
+
 from common.enums.product import ProductType
 from common.enums.state import LoanState
 from common.enums.transaction_type import TransactionType
@@ -49,14 +51,12 @@ class Loan(SQLModel, table=True):
         back_populates="loan",
     )
 
-    def get_balance_by_key(
-        self, key: TransactionKey
-    ) -> condecimal(max_digits=24, decimal_places=8):
+    def get_balance_by_key(self, key: TransactionKey) -> Decimal:
         return next(
             (x.balance_value for x in self.latest_balances if x.balance_key == key), 0
         )
 
-    def get_total_balance(self) -> condecimal(max_digits=24, decimal_places=8):
+    def get_total_balance(self) -> Decimal:
         return sum(x.balance_value for x in self.latest_balances)
 
 
@@ -108,19 +108,16 @@ class TransactionRecord(SQLModel, table=True):
     event_time: datetime
     product_type: ProductType
     event_type: TransactionType
-    event_source: str
-    funding_source: Optional[str]
-    funding_destination: Optional[str]
-    event_notes: Optional[str]
     balances: list["Balance"] = Relationship(back_populates="transaction")
     balance_deltas: list["BalanceDelta"] = Relationship(back_populates="transaction")
+    context: list["TransactionContext"] = Relationship(back_populates="transaction")
 
 
 class Balance(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     transaction_id: UUID = Field(foreign_key="transactionrecord.id")
     product_id: UUID = Field(foreign_key="loan.id")
-    balance_key: str
+    balance_key: TransactionKey
     balance_value: condecimal(max_digits=24, decimal_places=8)
     transaction: "TransactionRecord" = Relationship(
         back_populates="balances",
@@ -132,7 +129,7 @@ class BalanceDelta(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     transaction_id: UUID = Field(foreign_key="transactionrecord.id")
     product_id: UUID = Field(foreign_key="loan.id")
-    balance_delta_key: str
+    balance_delta_key: TransactionKey
     balance_delta_value: condecimal(max_digits=24, decimal_places=8)
     transaction: "TransactionRecord" = Relationship(
         back_populates="balance_deltas",
@@ -140,23 +137,25 @@ class BalanceDelta(SQLModel, table=True):
     )
 
 
+class TransactionContext(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    transaction_id: UUID = Field(foreign_key="transactionrecord.id")
+    product_id: UUID = Field(foreign_key="loan.id")
+    context_key: ContextKey
+    context_value: str
+    transaction: "TransactionRecord" = Relationship(
+        back_populates="context",
+        sa_relationship_kwargs={"uselist": False},
+    )
+
+
 class LatestBalance(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     product_id: UUID = Field(foreign_key="loan.id")
-    transaction_id: UUID = Field(foreign_key="transactionrecord.id")
-    balance_key: str
+    # transaction_id: UUID = Field(foreign_key="transactionrecord.id")
+    balance_key: TransactionKey
     balance_value: condecimal(max_digits=24, decimal_places=8)
     loan: "Loan" = Relationship(
         back_populates="latest_balances",
         sa_relationship_kwargs={"uselist": False},
     )
-
-
-class ContextRecord(SQLModel, table=True):
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
-    product_id: UUID = Field(foreign_key="loan.id")
-    event_time: datetime
-    product_type: ProductType
-    event_type: TransactionType
-    event_source: str
-    event_notes: str

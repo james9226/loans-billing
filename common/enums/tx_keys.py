@@ -5,7 +5,7 @@ class TransactionKey(str, Enum):
     PRINCIPAL_TO_DISBURSE = "principal_to_disburse"
     PRINCIPAL = "principal"
     INTEREST = "interest"
-    PREPAYMENTS_TO_COVER_INTEREST = "prepayments_to_cover_interest"
+    PRINCIPAL_AMOUNT_TO_COVER_INTEREST = "principal_amount_to_cover_interest"
     PRINCIPAL_DUE = "principal_due"
     PRINCIPAL_MPD1 = "principal_mpd1"
     PRINCIPAL_MPD2 = "principal_mpd2"

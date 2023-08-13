@@ -6,9 +6,11 @@ class TransactionType(str, Enum):
     LOAN_DISBURSED = "loan_disbursed"
     REPAYMENT_APPLIED = "repayment_applied"
     INTEREST_ACCRUED = "interest_accrued"
+    INTEREST_NOT_ACCRUED = "interest_not_accrued"
     ARREARS_AGED = "arrears_aged"
     DUE_BALANCES_SET = "due_balances_set"
     WRITTEN_OFF = "written_off"
+    END_OF_DAY_PROCESSED = "end_of_day_processed"
 
 
 class LoanEventReportingType(str, Enum):
